@@ -16,6 +16,9 @@ const { validateJSON, sanitizeInput, validateContentType } = require('./middlewa
 // Importar rutas
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
+const ownerRoutes = require("./routes/ownerRoutes");
+const patientRoutes = require("./routes/patientRoutes");
+
 
 // Crear aplicación Express
 const app = express();
@@ -35,12 +38,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Middleware para CORS
 app.use(cors({
     origin: process.env.NODE_ENV === 'production' 
-        ? ['https://tu-dominio.com'] // Cambiar por tu dominio en producción
-        : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'],
+        ? ['http://localhost:3001']
+        : [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000',
+            'http://localhost:8081' // 👈 EXPO WEB
+        ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 
 // Middlewares personalizados
 app.use(validateContentType);
@@ -103,6 +112,8 @@ app.get('/health', async (req, res) => {
 // Rutas de la API
 app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/owners`, ownerRoutes);
+app.use(`${API_PREFIX}/patients`, patientRoutes);
 
 // Ruta para documentación básica
 app.get('/docs', (req, res) => {

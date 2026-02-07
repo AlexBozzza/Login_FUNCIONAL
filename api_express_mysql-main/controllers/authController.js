@@ -191,83 +191,74 @@ class AuthController {
      * @param {Object} res - Objeto de respuesta Express
      * @returns {Promise<void>}
      */
-    static async updateProfile(req, res) {
-        try {
-            // Verificar errores de validación
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Errores de validación',
-                    errors: errors.array()
-                });
-            }
-
-            const userId = req.user.userId;
-            const { nombre, email, telefono, currentPassword, newPassword } = req.body;
-
-            // Verificar si el usuario existe
-            const existingUser = await User.findByEmailWithPassword(req.user.email);
-            if (!existingUser) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Usuario no encontrado'
-                });
-            }
-
-            let updateData = { nombre, email, telefono };
-
-            // Si se quiere cambiar la contraseña
-            if (newPassword) {
-                if (!currentPassword) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'La contraseña actual es requerida para cambiar la contraseña'
-                    });
-                }
-
-                // Verificar contraseña actual
-                const isCurrentPasswordValid = await bcrypt.compare(currentPassword, existingUser.password);
-                if (!isCurrentPasswordValid) {
-                    return res.status(401).json({
-                        success: false,
-                        message: 'Contraseña actual incorrecta'
-                    });
-                }
-
-                // Hashear nueva contraseña
-                const saltRounds = 12;
-                updateData.password = await bcrypt.hash(newPassword, saltRounds);
-            }
-
-            // Verificar si el email ya existe en otro usuario
-            if (email !== existingUser.email) {
-                const emailUser = await User.findByEmail(email);
-                if (emailUser && emailUser.id !== userId) {
-                    return res.status(409).json({
-                        success: false,
-                        message: 'El email ya está registrado en otro usuario'
-                    });
-                }
-            }
-
-            // Actualizar el usuario
-            const updatedUser = await User.update(userId, updateData);
-
-            res.status(200).json({
-                success: true,
-                message: 'Perfil actualizado correctamente',
-                data: updatedUser
-            });
-        } catch (error) {
-            console.error('Error en updateProfile:', error);
-            res.status(500).json({
+   static async updateProfile(req, res) {
+    try {
+        // Verificar errores de validación
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
                 success: false,
-                message: 'Error interno del servidor',
-                error: error.message
+                message: 'Errores de validación',
+                errors: errors.array()
             });
         }
+
+        const userId = req.user.userId;
+        const { nombre, telefono, currentPassword, newPassword } = req.body;
+
+        // Obtener usuario actual por ID
+        const existingUser = await User.findById(userId);
+        if (!existingUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        let updateData = { nombre, telefono };
+
+        // Si se desea cambiar la contraseña
+        if (newPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La contraseña actual es requerida para cambiar la contraseña'
+                });
+            }
+
+            const isCurrentPasswordValid = await bcrypt.compare(currentPassword, existingUser.password);
+
+            if (!isCurrentPasswordValid) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Contraseña actual incorrecta'
+                });
+            }
+
+            const saltRounds = 12;
+            updateData.password = await bcrypt.hash(newPassword, saltRounds);
+        }
+
+        // Actualizar el usuario
+       const updatedUser = await User.updateUser(userId, updateData);
+
+
+        res.status(200).json({
+            success: true,
+            message: 'Perfil actualizado correctamente',
+            data: updatedUser
+        });
+
+    } catch (error) {
+        console.error("❌ Error en updateProfile:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
     }
+}
+
 
     /**
      * Renueva el token JWT

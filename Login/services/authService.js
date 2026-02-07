@@ -1,134 +1,106 @@
-const API_URL = 'https://api-laravel-12-main-fv6pcf.laravel.cloud';
-
-// Configuración mejorada para fetch
-
-const fetchConfig = {
-  mode: 'cors',
-  credentials: 'same-origin', // Cambiar a 'same-origin' para probar
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-  }
-};
+const API_URL = "http://localhost:3001/api/v1/auth";
 
 export const authService = {
   async login(email, password) {
     try {
-      console.log('🔗 Conectando a:', `${API_URL}/api/login`);
-      
-      // Intentar sin credentials primero
-      const response = await fetch(`${API_URL}/api/login`, {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/login`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password })
       });
-
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', response.headers);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('❌ Error response:', errorText);
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
 
       const data = await response.json();
-      console.log('✅ Login exitoso:', data);
-      
-      // Guardar token y datos del usuario
-      if (data.data && data.data.token) {
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
-      } else if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      } else {
-        console.warn('⚠️ No token received in response');
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('❌ Error completo en login:', error);
-      
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error(`Problema de CORS o conexión: ${error.message}`);
-      }
-      
-      throw error;
-    }
-  },
-
-  // ... (el resto de los métodos se mantienen igual)
-  async getProfile() {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No hay token disponible');
-      
-      const response = await fetch(`${API_URL}/api/profile`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status} al obtener el perfil`);
+        throw new Error(data.message || "Credenciales incorrectas");
       }
 
-      return await response.json();
+      // Guardar token y usuario
+      localStorage.setItem("token", data.data.token);
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+
+      return data;
     } catch (error) {
-      console.error('Error en getProfile:', error);
+      console.error("❌ Error en login:", error);
       throw error;
     }
   },
 
   async logout() {
     try {
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (token) {
-        await fetch(`${API_URL}/api/logout`, {
-          method: 'POST',
+        await fetch(`${API_URL}/logout`, {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
         });
       }
-
-      this.clearAuthData();
-      
     } catch (error) {
-      console.error('Error en logout:', error);
+      console.error("Error al cerrar sesión:", error);
+    } finally {
       this.clearAuthData();
     }
   },
 
   clearAuthData() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   },
 
   isAuthenticated() {
-    if (typeof window === 'undefined') return false;
-    return !!localStorage.getItem('token');
+    return typeof window !== "undefined" && !!localStorage.getItem("token");
   },
 
   getCurrentUser() {
-    if (typeof window === 'undefined') return null;
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    if (typeof window === "undefined") return null;
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
   },
 
   getToken() {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('token');
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("token");
+  },
+
+  /** ✅ OBTENER PERFIL POR ID */
+  async getProfile(id) {
+    const token = this.getToken();
+    
+    const response = await fetch(`${API_URL}/profile?id=${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+    return data.data;
+  },
+
+  /** ✅ ACTUALIZAR PERFIL */
+async updateProfile(data) {
+  try {
+    const token = this.getToken();
+
+    const response = await fetch("http://localhost:3001/api/v1/auth/profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("❌ Error en updateProfile:", error);
+    throw error;
   }
+}
 };
