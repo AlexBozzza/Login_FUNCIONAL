@@ -6,7 +6,14 @@
 const express = require('express');
 const router = express.Router();
 const UserController = require('../controllers/userController');
-const { validateUser, validateUserId } = require('../middleware/validation');
+const { 
+  validateUser, 
+  validateUserId, 
+  validateRegister,
+  validateUserPartial
+} = require('../middleware/validation');
+
+
 
 /**
  * @route GET /users
@@ -54,7 +61,15 @@ router.get('/:id', validateUserId, UserController.getUserById);
  * @body {string} telefono - Número de teléfono del usuario (requerido)
  * @returns {Object} Usuario creado
  */
-router.post('/', validateUser, UserController.createUser);
+/** 
+ * @route POST /users
+ * 🔥 CAMBIO AQUÍ → usamos validateRegister
+ */
+router.post(
+  '/',
+  validateRegister,
+  UserController.createUser
+);
 
 /**
  * @route PUT /users/:id
@@ -66,7 +81,15 @@ router.post('/', validateUser, UserController.createUser);
  * @body {string} telefono - Número de teléfono del usuario (requerido)
  * @returns {Object} Usuario actualizado
  */
-router.put('/:id', validateUserId, validateUser, UserController.updateUser);
+
+
+router.put(
+  '/:id',
+  validateUserId,
+  validateUserPartial,
+  UserController.updateUser
+);
+
 
 /**
  * @route DELETE /users/:id

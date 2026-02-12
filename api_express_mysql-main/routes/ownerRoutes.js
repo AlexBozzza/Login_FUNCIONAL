@@ -73,6 +73,27 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Eliminar propietario
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await Owner.delete(id);
+
+    res.json({
+      success: true,
+      message: 'Propietario eliminado correctamente',
+    });
+  } catch (error) {
+    console.error('Error eliminando propietario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error eliminando propietario',
+    });
+  }
+});
+
+
 // PUT /owners/:id
 router.put("/:id", async (req, res) => {
   try {

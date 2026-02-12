@@ -12,8 +12,14 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   const data = await Patient.findById(id);
+
+  if (!data) {
+    return res.status(404).json({ message: "Paciente no encontrado" });
+  }
+
   res.json({ data });
 });
+
 
 // Crear paciente
 router.post("/", async (req, res) => {
@@ -41,18 +47,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Eliminar paciente por ID ✅
- 
-  deletePatient: async (id) => {
-    const token = localStorage.getItem("token");
 
-    const res = await fetch(`${API_URL}/patients/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return res.json();
-  }
+
 
 module.exports = router;

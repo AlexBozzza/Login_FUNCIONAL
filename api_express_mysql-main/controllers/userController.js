@@ -2,7 +2,7 @@
  * Controlador de Usuarios
  * @description Maneja todas las operaciones HTTP para la entidad Usuario
  */
-
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const { validationResult } = require('express-validator');
 
@@ -10,12 +10,7 @@ const { validationResult } = require('express-validator');
  * Clase que maneja las operaciones del controlador de usuarios
  */
 class UserController {
-    /**
-     * Obtiene todos los usuarios con paginación opcional
-     * @param {Object} req - Objeto de solicitud Express
-     * @param {Object} res - Objeto de respuesta Express
-     * @returns {Promise<void>}
-     */
+
     static async getAllUsers(req, res) {
         try {
             const page = parseInt(req.query.page) || 1;
@@ -25,7 +20,6 @@ class UserController {
             let result;
 
             if (search) {
-                // Si hay parámetro de búsqueda, buscar por nombre
                 const users = await User.searchByName(search);
                 result = {
                     users,
@@ -38,7 +32,6 @@ class UserController {
                     }
                 };
             } else {
-                // Obtener usuarios con paginación
                 result = await User.paginate(page, limit);
             }
 
@@ -58,17 +51,10 @@ class UserController {
         }
     }
 
-    /**
-     * Obtiene un usuario por su ID
-     * @param {Object} req - Objeto de solicitud Express
-     * @param {Object} res - Objeto de respuesta Express
-     * @returns {Promise<void>}
-     */
     static async getUserById(req, res) {
         try {
             const { id } = req.params;
 
-            // Validar que el ID sea un número
             if (isNaN(id)) {
                 return res.status(400).json({
                     success: false,
@@ -100,131 +86,132 @@ class UserController {
         }
     }
 
-    /**
-     * Crea un nuevo usuario
-     * @param {Object} req - Objeto de solicitud Express
-     * @param {Object} res - Objeto de respuesta Express
-     * @returns {Promise<void>}
-     */
-    static async createUser(req, res) {
-        try {
-            // Verificar errores de validación
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Errores de validación',
-                    errors: errors.array()
-                });
-            }
+static async createUser(req, res) {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Errores de validación',
+                errors: errors.array()
+            });
+        }
 
-            const { nombre, email, telefono } = req.body;
+        // ✅ Datos desde el body
+        const { nombre, email, telefono, password } = req.body;
 
-            // Verificar si el email ya existe
-            const existingUser = await User.findByEmail(email);
-            if (existingUser) {
+        // ✅ Validación extra por seguridad
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: 'La contraseña es obligatoria'
+            });
+        }
+
+        // ✅ Verificar email duplicado
+        const existingUser = await User.findByEmail(email);
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: 'El email ya está registrado'
+            });
+        }
+
+        // 🔐 ENCRIPTAR CONTRASEÑA (AQUÍ ESTABA LO QUE FALTABA)
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // ✅ Crear usuario con contraseña encriptada
+        const newUser = await User.create({
+            nombre,
+            email,
+            telefono,
+            password: hashedPassword
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Usuario creado correctamente',
+            data: newUser
+        });
+
+    } catch (error) {
+        console.error('Error en createUser:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+}
+
+
+
+    static async updateUser(req, res) {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Errores de validación',
+                errors: errors.array()
+            });
+        }
+
+        const { id } = req.params;
+        const { nombre, email, telefono } = req.body;
+
+        if (isNaN(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'El ID debe ser un número válido'
+            });
+        }
+
+        const existingUser = await User.findById(id);
+        if (!existingUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        if (email !== existingUser.email) {
+            const emailUser = await User.findByEmail(email);
+            if (emailUser && emailUser.id !== parseInt(id)) {
                 return res.status(409).json({
                     success: false,
-                    message: 'El email ya está registrado'
+                    message: 'El email ya está registrado en otro usuario'
                 });
             }
-
-            // Crear el usuario
-            const newUser = await User.create({ nombre, email, telefono });
-
-            res.status(201).json({
-                success: true,
-                message: 'Usuario creado correctamente',
-                data: newUser
-            });
-        } catch (error) {
-            console.error('Error en createUser:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Error interno del servidor',
-                error: error.message
-            });
         }
+
+        // ✅ LLAMADA CORRECTA AL MODELO
+        const updatedUser = await User.updateUser(id, {
+            nombre,
+            email,
+            telefono
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Usuario actualizado correctamente',
+            data: updatedUser
+        });
+    } catch (error) {
+        console.error('Error en updateUser:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
     }
+}
 
-    /**
-     * Actualiza un usuario existente
-     * @param {Object} req - Objeto de solicitud Express
-     * @param {Object} res - Objeto de respuesta Express
-     * @returns {Promise<void>}
-     */
-    static async updateUser(req, res) {
-        try {
-            // Verificar errores de validación
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Errores de validación',
-                    errors: errors.array()
-                });
-            }
 
-            const { id } = req.params;
-            const { nombre, email, telefono } = req.body;
-
-            // Validar que el ID sea un número
-            if (isNaN(id)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'El ID debe ser un número válido'
-                });
-            }
-
-            // Verificar si el usuario existe
-            const existingUser = await User.findById(id);
-            if (!existingUser) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Usuario no encontrado'
-                });
-            }
-
-            // Verificar si el email ya existe en otro usuario
-            if (email !== existingUser.email) {
-                const emailUser = await User.findByEmail(email);
-                if (emailUser && emailUser.id !== parseInt(id)) {
-                    return res.status(409).json({
-                        success: false,
-                        message: 'El email ya está registrado en otro usuario'
-                    });
-                }
-            }
-
-            // Actualizar el usuario
-            const updatedUser = await User.update(id, { nombre, email, telefono });
-
-            res.status(200).json({
-                success: true,
-                message: 'Usuario actualizado correctamente',
-                data: updatedUser
-            });
-        } catch (error) {
-            console.error('Error en updateUser:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Error interno del servidor',
-                error: error.message
-            });
-        }
-    }
-
-    /**
-     * Elimina un usuario
-     * @param {Object} req - Objeto de solicitud Express
-     * @param {Object} res - Objeto de respuesta Express
-     * @returns {Promise<void>}
-     */
     static async deleteUser(req, res) {
         try {
             const { id } = req.params;
 
-            // Validar que el ID sea un número
             if (isNaN(id)) {
                 return res.status(400).json({
                     success: false,
@@ -232,7 +219,6 @@ class UserController {
                 });
             }
 
-            // Verificar si el usuario existe
             const existingUser = await User.findById(id);
             if (!existingUser) {
                 return res.status(404).json({
@@ -241,7 +227,6 @@ class UserController {
                 });
             }
 
-            // Eliminar el usuario
             await User.delete(id);
 
             res.status(200).json({
@@ -258,12 +243,6 @@ class UserController {
         }
     }
 
-    /**
-     * Busca usuarios por nombre
-     * @param {Object} req - Objeto de solicitud Express
-     * @param {Object} res - Objeto de respuesta Express
-     * @returns {Promise<void>}
-     */
     static async searchUsers(req, res) {
         try {
             const { q } = req.query;
@@ -293,12 +272,6 @@ class UserController {
         }
     }
 
-    /**
-     * Obtiene estadísticas de usuarios
-     * @param {Object} req - Objeto de solicitud Express
-     * @param {Object} res - Objeto de respuesta Express
-     * @returns {Promise<void>}
-     */
     static async getUserStats(req, res) {
         try {
             const total = await User.count();

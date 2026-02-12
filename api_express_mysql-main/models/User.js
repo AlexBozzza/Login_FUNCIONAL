@@ -57,22 +57,18 @@ class User {
     }
 
     // ✅ Update combinado (nombre, telefono y contraseña si viene)
-    static async updateUser(id, { nombre, telefono, password }) {
-        let sql = `UPDATE users SET nombre = ?, telefono = ?, updated_at = NOW()`;
-        const params = [nombre, telefono];
+ static async updateUser(id, { nombre, email, telefono }) {
+    const sql = `
+      UPDATE users 
+      SET nombre = ?, email = ?, telefono = ?, updated_at = NOW()
+      WHERE id = ?
+    `;
 
-        if (password) {
-            sql += `, password = ?`;
-            params.push(password);
-        }
+    await pool.query(sql, [nombre, email, telefono, id]);
 
-        sql += ` WHERE id = ?`;
-        params.push(id);
+    return this.findById(id);
+}
 
-        await pool.query(sql, params);
-
-        return this.findById(id);
-    }
 }
 
 module.exports = User;

@@ -78,7 +78,7 @@ export default function HomeScreen() {
         {/* PACIENTES */}
         <Pressable
           style={styles.card}
-          onPress={() => router.push('/pacientes/index')}
+          onPress={() => router.push('/pacientes')}
         >
           <MaterialIcons name="pets" size={28} color="#ffd166" />
           <View>
@@ -96,22 +96,35 @@ export default function HomeScreen() {
         {/* CREAR USUARIO */}
         <Pressable
           style={styles.actionButton}
-          onPress={() => router.push('/usuarios/create/index')}
+          onPress={() => router.push('/usuarios/create')}
         >
           <Ionicons name="person-add" size={20} color="#2b2b2b" />
           <Text style={styles.actionText}>  Crear usuario</Text>
         </Pressable>
 
-        {/* EDITAR USUARIO */}
-        <Pressable
-          style={styles.actionButtonSecondary}
-          onPress={() => router.push('/usuarios/index')}
-        >
-          <Ionicons name="create-outline" size={20} color="#fff" />
-          <Text style={[styles.actionText, { color: '#fff' }]}>
-            {' '}Editar usuario
-          </Text>
-        </Pressable>
+{/* EDITAR USUARIO */}
+<Pressable
+  style={[
+    styles.actionButtonSecondary,
+    { opacity: user ? 1 : 0.5 }
+  ]}
+  disabled={!user}
+  onPress={() => {
+    if (!user) return;
+
+    router.push({
+      pathname: '/usuarios/edit/[id]',
+      params: { id: user.id.toString() },
+    });
+  }}
+>
+  <Ionicons name="create-outline" size={20} color="#fff" />
+  <Text style={[styles.actionText, { color: '#fff' }]}>
+    {' '}Editar usuario
+  </Text>
+</Pressable>
+
+
       </View>
 
     </View>

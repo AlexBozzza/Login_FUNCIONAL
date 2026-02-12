@@ -1,4 +1,11 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Alert,
+  Platform,
+} from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import API from '../../services/api';
@@ -9,8 +16,10 @@ export default function OwnerDetailScreen() {
   const [owner, setOwner] = useState<any>(null);
 
   useEffect(() => {
-    loadOwner();
-  }, []);
+    if (id) {
+      loadOwner();
+    }
+  }, [id]);
 
   const loadOwner = async () => {
     try {
@@ -19,6 +28,49 @@ export default function OwnerDetailScreen() {
     } catch (error) {
       console.error('Error cargando propietario', error);
     }
+  };
+
+  // ✅ ELIMINAR PROPIETARIO (WEB + MÓVIL)
+  const handleDelete = async () => {
+    // 🌐 WEB
+    if (Platform.OS === 'web') {
+      const confirmDelete = window.confirm(
+        '¿Seguro que deseas eliminar este propietario?'
+      );
+
+      if (!confirmDelete) return;
+
+      try {
+        await API.delete(`/owners/${id}`);
+        router.replace('/propietarios');
+      } catch (error) {
+        console.error('Error eliminando propietario', error);
+        alert('No se pudo eliminar el propietario');
+      }
+      return;
+    }
+
+    // 📱 MÓVIL
+    Alert.alert(
+      'Eliminar propietario',
+      '¿Seguro que deseas eliminar este propietario?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await API.delete(`/owners/${id}`);
+              router.replace('/propietarios');
+            } catch (error) {
+              console.error('Error eliminando propietario', error);
+              Alert.alert('Error', 'No se pudo eliminar el propietario');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (!owner) {
@@ -36,7 +88,6 @@ export default function OwnerDetailScreen() {
         <Pressable onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#ffd166" />
         </Pressable>
-
         <Text style={styles.title}>Detalle del Propietario</Text>
       </View>
 
@@ -63,7 +114,7 @@ export default function OwnerDetailScreen() {
         </View>
       </View>
 
-      {/* Acciones */}
+      {/* Botón editar */}
       <Pressable
         style={styles.editButton}
         onPress={() =>
@@ -76,9 +127,16 @@ export default function OwnerDetailScreen() {
         <Ionicons name="create" size={18} color="#2b2b2b" />
         <Text style={styles.editText}>  Editar propietario</Text>
       </Pressable>
+
+      {/* Botón eliminar */}
+      <Pressable style={styles.deleteButton} onPress={handleDelete}>
+        <Ionicons name="trash" size={18} color="#fff" />
+        <Text style={styles.deleteText}>  Eliminar propietario</Text>
+      </Pressable>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -148,5 +206,20 @@ const styles = StyleSheet.create({
   editText: {
     fontWeight: 'bold',
     color: '#2b2b2b',
+  },
+
+  deleteButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#b00020',
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+
+  deleteText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
