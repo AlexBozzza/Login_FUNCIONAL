@@ -2,24 +2,42 @@ const express = require("express");
 const router = express.Router();
 const Patient = require("../models/Patient");
 
-// Obtener todos los pacientes
+// ✅ Obtener pacientes (con filtro opcional por owner)
 router.get("/", async (req, res) => {
-  const data = await Patient.getAll();
-  res.json({ data });
-});
+  try {
+    const { owner_id } = req.query;
 
-// Obtener paciente por ID ✅
-router.get("/:id", async (req, res) => {
-  const { id } = req.params;
-  const data = await Patient.findById(id);
+    let data;
 
-  if (!data) {
-    return res.status(404).json({ message: "Paciente no encontrado" });
+    if (owner_id) {
+      data = await Patient.getByOwnerId(owner_id);
+    } else {
+      data = await Patient.getAll();
+    }
+
+    res.json({ data });
+  } catch (error) {
+    console.error("Error obteniendo pacientes:", error);
+    res.status(500).json({ message: "Error obteniendo pacientes" });
   }
-
-  res.json({ data });
 });
 
+// ✅ Obtener paciente por ID (ESTA ERA LA QUE FALTABA)
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await Patient.findById(id);
+
+    if (!data) {
+      return res.status(404).json({ message: "Paciente no encontrado" });
+    }
+
+    res.json({ data });
+  } catch (error) {
+    console.error("Error obteniendo paciente por ID:", error);
+    res.status(500).json({ message: "Error obteniendo paciente" });
+  }
+});
 
 // Crear paciente
 router.post("/", async (req, res) => {
@@ -27,15 +45,14 @@ router.post("/", async (req, res) => {
   res.json({ data });
 });
 
-// Eliminar paciente por ID ✅
+// Eliminar paciente por ID
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
-  const result = await Patient.delete(id);
+  await Patient.delete(id);
   res.json({ success: true, message: "Paciente eliminado" });
 });
 
-
-// ✅ Actualizar paciente
+// Actualizar paciente
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -46,8 +63,5 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ success: false, error: "Error updating patient" });
   }
 });
-
-
-
 
 module.exports = router;

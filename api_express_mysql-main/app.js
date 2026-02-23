@@ -8,6 +8,8 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const appointmentRoutes = require('./routes/appointmentRoutes');
+
 
 // Importar configuraciones y middlewares
 const { testConnection } = require('./config/database');
@@ -18,6 +20,8 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const ownerRoutes = require("./routes/ownerRoutes");
 const patientRoutes = require("./routes/patientRoutes");
+
+
 
 
 // Crear aplicación Express
@@ -114,6 +118,7 @@ app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/owners`, ownerRoutes);
 app.use(`${API_PREFIX}/patients`, patientRoutes);
+app.use(`${API_PREFIX}/appointments`, appointmentRoutes);
 
 // Ruta para documentación básica
 app.get('/docs', (req, res) => {

@@ -87,6 +87,32 @@ export default function HomeScreen() {
           </View>
         </Pressable>
 
+        {/* CITAS */}
+      <Pressable
+       style={styles.card}
+       onPress={() => router.push('/citas')}
+     >
+      <Ionicons name="calendar" size={28} color="#ffd166" />
+     <View>
+      <Text style={styles.cardTitle}>Citas</Text>
+      <Text style={styles.cardText}>Ver agenda por fecha</Text>
+      </View>
+      </Pressable>
+
+<Pressable
+  style={[styles.card, { backgroundColor: '#8b5e34' }]}
+  onPress={() => router.push('/citas/create')}
+>
+  <Ionicons name="calendar-outline" size={28} color="#ffd166" />
+  <View>
+    <Text style={styles.cardTitle}>Nueva cita</Text>
+    <Text style={styles.cardText}>Agendar consulta</Text>
+  </View>
+</Pressable>
+
+
+
+
       </View>
 
       {/* GESTIÓN DE USUARIOS */}
